@@ -1,0 +1,23 @@
+obs types:
+  adt:
+    variable: obs_absolute_dynamic_topography
+    skip merge: [coperl4]
+  sst:
+    variable: sea_surface_temperature
+  salt:
+    variable: sea_water_salinity
+  temp:
+    variable: sea_water_temperature
+  sss:
+    variable: sea_surface_salinity
+
+diagnostics:
+- ObsValue
+- ombg
+
+filters:
+- "domain_clip:19.5,-98.125:45.7,-98.125:45.7,-7.625:1.0,-7.625:1.0,-69.74:9.388,-79.126:8.43,-80.98:9.03,-82.96:11.65,-84.72"
+
+bins:
+- "latitude:r=0.5"
+- "longitude:r=0.5"
