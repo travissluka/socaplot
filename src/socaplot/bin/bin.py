@@ -15,7 +15,7 @@ import dateutil.parser as dtp
 # load binning specification
 # TODO allow user to manually specify this?
 def load_config():
-    config_file='../../../binning_specs/binning.yaml'
+    config_file='../config/binning.yaml'
     config_file=(pathlib.Path(__file__).parent / config_file).resolve()
     config=yaml.safe_load(open(str(config_file)))
     return config

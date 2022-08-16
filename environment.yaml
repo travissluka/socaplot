@@ -1,0 +1,13 @@
+name: socaplot
+dependencies:
+  - cartopy
+  - click
+  - matplotlib
+  - netcdf4
+  - numpy
+  - pygeos
+  - python=3.10
+  - pyyaml
+  - scipy
+  - xarray
+#  - pytest
