@@ -19,13 +19,19 @@ diagnostics:
 filters:
 - "domain_clip:19.5,-98.125:45.7,-98.125:45.7,-7.625:1.0,-7.625:1.0,-69.74:9.388,-79.126:8.43,-80.98:9.03,-82.96:11.65,-84.72"
 - "range:ObsValue/{variable}:-100,100"
-- "rename:EffectiveQC0/{variable}:qc"
-- "rename:ombg/{variable}:OmB/{variable}"
+
+# the QC variable depends on what was run (hofx, var, ...)
+- "rename:EffectiveQC/{variable}:qc:quiet"
+- "rename:EffectiveQC0/{variable}:qc:quiet"
+
+# find / calculate OmB
+- "sub:ObsValue/{variable}:hofx/{variable}:OmB/{variable}:quiet"
+- "rename:ombg/{variable}:OmB/{variable}:quiet"
 
 
 bins:
 - "qc:e=-0.5,0.5,999.5"  # TODO implement integer bins
-- "latitude:r=0.25"
-- "longitude:r=0.25"
+- "latitude:r=0.5"
+- "longitude:r=0.5"
 
 
