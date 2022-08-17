@@ -1,4 +1,6 @@
-# description:
+# description: combine all of the platforms from the same observation type into
+# a single file
+
 name: hires_all
 
 source:
