@@ -1,7 +1,9 @@
+name: hires
+
 obs types:
+  # TODO, find a way to remove this section??
   adt:
     variable: obs_absolute_dynamic_topography
-    skip merge: [coperl4]
   sst:
     variable: sea_surface_temperature
   salt:
@@ -33,5 +35,3 @@ bins:
 - "qc:e=-0.5,0.5,999.5"  # TODO implement integer bins
 - "latitude:r=0.5"
 - "longitude:r=0.5"
-
-

@@ -1,0 +1,13 @@
+# description:
+name: hires_all
+
+source:
+  level: l1a
+  name: hires
+
+operation:
+  name: merge_plat
+
+  ignore:
+    adt:
+    - coperl4
