@@ -1,4 +1,9 @@
 name: socaplot
+
+channels:
+- conda-forge
+- defaults
+
 dependencies:
   - cartopy
   - click
