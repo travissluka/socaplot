@@ -106,7 +106,7 @@ def bin_(exp_dir, startdate, enddate, obstype, force):
             in_dir = out_dir / src_lvl / dt[:4] / dt
             obs_types = set([
                 f.split('/')[-1].split('.')[1].split('_')[0]
-                for f in glob(str(in_dir / f'{src_name}.*.nc'))])
+                for f in glob(str(in_dir / f'{src_name}.{obstype}.nc'))])
             for ob_type in obs_types:
                 try:
                     skip_plats = config['operation']['ignore'][ob_type]
@@ -115,7 +115,7 @@ def bin_(exp_dir, startdate, enddate, obstype, force):
                 in_files = glob(str(in_dir / f'{src_name}.{ob_type}_*.nc'))
                 in_files = [
                     f for f in in_files
-                    if f.split('/')[-1].split('.')[1].split('_')[1] not in skip_plats]
+                    if '_'.join(f.split('/')[-1].split('.')[1].split('_')[1:]) not in skip_plats]
                 out_file = out_dir / 'l1b' / dt[:4] / dt / f'{l1b_cfg}.{ob_type}.nc'
 
                 # skip if file already exists?
