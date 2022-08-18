@@ -30,8 +30,7 @@ filters:
 - "sub:ObsValue/{variable}:hofx/{variable}:OmB/{variable}:quiet"
 - "rename:ombg/{variable}:OmB/{variable}:quiet"
 
-
 bins:
 - "qc:e=-0.5,0.5,999.5"  # TODO implement integer bins
-- "latitude:r=0.5"
-- "longitude:r=0.5"
+- "latitude:r=0.25"
+- "longitude:r=0.25"
