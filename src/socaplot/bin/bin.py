@@ -78,7 +78,7 @@ def bin_(exp_dir, startdate, enddate, obstype, force):
                 if out_file.exists():
                     if not force and out_file.stat().st_mtime > in_file.stat().st_mtime:
                         continue
-                    elif force:
+                    else:
                         opts += ' -O'
 
                 # create output directory if not already existing
