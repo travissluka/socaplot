@@ -2,7 +2,6 @@ import setuptools  # type: ignore
 
 setuptools.setup(
     name="socaplot",
-    version="0.1.0",
     author="JCSDA",
     description="Plotting tools for soca-science using BESPIN/PADME packages",
     url="",
@@ -15,6 +14,10 @@ setuptools.setup(
         'Natural Language :: English',
         "Operating System :: OS Independent",
     ],
+    setup_requires=["setuptools-git-versioning"],
+    setuptools_git_versioning={
+        "enabled": True,
+    },
     install_requires=[
         'bespin @ git+ssh://git@github.com/jcsda-internal/bespin@feature/soca',
         'padme @ git+ssh://git@github.com/jcsda-internal/padme@feature/soca',
