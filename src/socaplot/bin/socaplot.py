@@ -6,6 +6,7 @@
 import click
 
 from .bin import bin_
+from .plot import plot
 
 @click.group()
 @click.version_option()
@@ -17,3 +18,4 @@ def cli():
     pass
 
 cli.add_command(bin_)
+cli.add_command(plot)
