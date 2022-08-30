@@ -11,12 +11,19 @@ from itertools import product
 import dateutil.parser as dtp
 from glob import glob
 import os
+import pytz
 
 @click.command()
 @click.argument('exp_dir',
     type=click.Path(exists=True, dir_okay=True),
     nargs=-1, required=True,)
-def plot(exp_dir):
+@click.option('-s', '--startdate', help=(
+    "start date to use for plots. Default is to use the earliest date"
+    " among all the experiments."))
+@click.option('-e', '--enddate', help=(
+    "end date to use for the plots. Default is to use the earliest date"
+    " amon all the experiments."))
+def plot(exp_dir, startdate, enddate):
     """ Plot one or more experiments.
 
     EXP_DIR should be the top level directory of an experiment, more than
@@ -26,7 +33,12 @@ def plot(exp_dir):
     to the exp.config file.
     """
 
+    #parse input args
     exp_dir = [pathlib.Path(d).resolve() for d in exp_dir]
+    if startdate is not None:
+        startdate = pytz.utc.localize(dtp.parse(startdate))
+    if enddate is not None:
+        enddate = pytz.utc.localize(dtp.parse(enddate))
 
     # sanity checks on the input experiments
     if len(set(exp_dir)) < len(exp_dir):
@@ -55,68 +67,83 @@ def plot(exp_dir):
         try:
 
             # get the experiment name
-            name = sp.check_output(f'. {exp_config_file} && echo $EXP_NAME', shell=True)
-            name = name.decode().strip()
-            if not len(name):
-                raise ValueError(f'illegal value for EXP_NAME "{name}"')
+            exp_name = sp.check_output(f'. {exp_config_file} && echo $EXP_NAME', shell=True)
+            exp_name = exp_name.decode().strip()
+            if not len(exp_name):
+                raise ValueError(f'illegal value for EXP_NAME "{exp_name}"')
 
             # get whether it is regional
-            regional = sp.check_output(f'. {exp_config_file} && echo $DA_REGIONAL_ENABLED', shell=True)
-            regional = regional.decode().strip()
-            regional = True if regional in ('t','T','1', 'y', 'Y') else False
+            exp_regional = sp.check_output(f'. {exp_config_file} && echo $DA_REGIONAL_ENABLED', shell=True)
+            exp_regional = exp_regional.decode().strip()
+            exp_regional = True if exp_regional in ('t','T','1', 'y', 'Y') else False
 
             # start date
-            startdate = sp.check_output(f'. {exp_config_file} && date -u -d $EXP_START_DATE', shell=True)
-            startdate = dtp.parse(startdate.decode().strip())
+            exp_startdate = sp.check_output(f'. {exp_config_file} && date -u -d $EXP_START_DATE', shell=True)
+            exp_startdate = dtp.parse(exp_startdate.decode().strip())
         except:
             raise RuntimeError(f'Unable to read variables from file "{exp_config_file}"')
 
         # read from cycle_status
         cycle_status_file = d / 'cycle_status'
         with open(cycle_status_file) as f:
-            enddate = dtp.parse(f.read())
+            exp_enddate = dtp.parse(f.read())
 
-        if name in exp_param:
+        if exp_name in exp_param:
             raise ValueError(
-                f'experiment name "{name} is already present. \n'
+                f'experiment name "{exp_name} is already present. \n'
                 f' trying to add: "{d}" \n'
-                f' already present: "{exp_param[name]["path"]}"')
+                f' already present: "{exp_param[exp_name]["path"]}"')
 
-        exp_param[name] = {
+        exp_param[exp_name] = {
             'path': d,
-            'regional': regional,
-            'startdate': startdate,
-            'enddate': enddate
+            'regional': exp_regional,
+            'startdate': exp_startdate,
+            'enddate': exp_enddate
         }
     print('experiments: \n ', '\n  '.join(exp_param.keys()))
 
     # calculate the common time period across all experiments
     common_startdate = max([e['startdate'] for e in exp_param.values()])
     common_enddate = min([e['enddate'] for e in exp_param.values()])
+    if startdate is None:
+        startdate = common_startdate
+    if enddate is None:
+        enddate = common_enddate
+    if startdate < common_startdate:
+        raise ValueError(
+            f'given startdate "{startdate}" is outside the range of the'
+            f' common start dates for the experiments "{common_startdate}')
+    if enddate > common_enddate or enddate < startdate:
+        raise ValueError(
+            f'given startdate "{enddate}" is outside the range of the'
+            f' common end dates for the experiments "{common_enddate}')
     print(
         'generating plots for the common period of: \n'
-        f'  startdate: {common_startdate} \n'
-        f'  enddate: {common_enddate}')
+        f'  startdate: {startdate} \n'
+        f'  enddate: {enddate}')
 
     # generate / find the merged files
     # TODO remove these hardcoded values
     binning = 'hires_all'
-    for exp, plat in product(exp_param.keys(), ('adt', 'sst' )):
-        pfx='_'.join([d.strftime("%Y%m%d%H") for d in (common_startdate, common_enddate)])
+    for exp, plat in product(exp_param.keys(), ('adt', 'sst', 'sss' )):
+        pfx='_'.join([d.strftime("%Y%m%d%H") for d in (startdate, enddate)])
         exp_file = exp_param[exp]['path'] / f'obs_bin/l1c/{binning}.{plat}.{pfx}.nc'
 
         # use bespin to merge the files
         if not exp_file.exists():
-            print('creating merged file: ', exp_file)
             input_files = exp_param[exp]['path'] / f'obs_bin/l1b/????/*/{binning}.{plat}.nc'
             input_files = glob(str(input_files))
             input_files = sorted(list(filter(
-                lambda f: common_startdate.strftime('%Y%m%d%H') <= Path(f).parts[-2] < common_enddate.strftime("%Y%m%d%H"),
+                lambda f: startdate.strftime('%Y%m%d%H') <= Path(f).parts[-2] < enddate.strftime("%Y%m%d%H"),
                 input_files)))
 
+            # skip if there are no files to merges
+            if len(input_files) < 2: # TODO, handle case where len == 1?
+                continue
+
+            print('creating merged file: ', exp_file)
             if not exp_file.parent.exists():
                 os.makedirs(exp_file.parent)
-
             cmd = f'bespin merge {" ".join(input_files)} -o  {exp_file}'
             sp.check_call(cmd, shell=True)
 
