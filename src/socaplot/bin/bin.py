@@ -29,18 +29,14 @@ def bin_(exp_dir, startdate, enddate, obstype, force):
 
     A single EXP_DIR pointing to the top level directory of a soca-science
     experiment.
+
+    WARNING: things are currently hardcoded for the regional HAT10 domain.
+    If this is not what you are using, turn back now (or talk to Travis).
     """
 
     # parse input dates
-    if startdate is None:
-        startdate = datetime(1,1,1,0)
-    else:
-        startdate = dtp.parse(startdate)
-
-    if enddate is None:
-        enddate = datetime(9999,1,1)
-    else:
-        enddate = dtp.parse(enddate)
+    startdate = datetime(1,1,1,0) if startdate is None else dtp.parse(startdate)
+    enddate = datetime(9999,1,1) if enddate is None else dtp.parse(enddate)
 
     # input / output directories
     exp_dir = pathlib.Path(exp_dir).resolve()
@@ -50,9 +46,14 @@ def bin_(exp_dir, startdate, enddate, obstype, force):
     #-----------------------------------------------------------------------------------------------
     ### l1a and l1b binning (binning within a single cycle date)
     #-----------------------------------------------------------------------------------------------
+    # determine if I should look in ens or ctrl dir, not both (for now)
+    # TODO, handle both directories when we start doing envar experiments
+    ctrl_files=sorted(glob(f'{in_dir}/????/??????????/ctrl/{obstype}.nc'))
+    ens_files=sorted(glob(f'{in_dir}/????/??????????/ens/{obstype}.nc'))
+    obs_files=ctrl_files if len(ctrl_files) >= len(ens_files) else ens_files
+    print(f"processing {len(obs_files)} files")
+
     # for each directory that contains observations
-    # TODO look at the ens directory also? for now I'll just look at ctrl
-    obs_files=sorted(glob(f'{in_dir}/????/??????????/ctrl/{obstype}.nc'))
     obs_dirs=sorted(list(set([pathlib.Path(f).parent for f in obs_files])))
     for obs_dir in obs_dirs:
 
@@ -81,9 +82,17 @@ def bin_(exp_dir, startdate, enddate, obstype, force):
                     else:
                         opts += ' -O'
 
+                # skip if yaml tells us to skip
+                skip = False
+                if 'skip' in config['obs types'][ot]:
+                    skip = config['obs types'][ot]['skip']
+                if skip:
+                    continue
+
                 # create output directory if not already existing
                 if not out_file.parent.exists():
                     os.makedirs(out_file.parent)
+
 
                 print(f'l1a "{l1a_cfg}" processing for {out_file}')
                 cmd = f'bespin bin {in_file} -o {out_file}'
@@ -94,7 +103,7 @@ def bin_(exp_dir, startdate, enddate, obstype, force):
                 cmd+=opts
                 sp.check_call(cmd, shell=True)
 
-        # l1b binning
+        # l1b binning, merging multiple types within a single cycle
         #-------------------------------------------------------------------------------------------
         # TODO generalize this and move into config files
         # also, this is a bit of a mess

@@ -3,14 +3,17 @@ name: hires
 obs types:
   # TODO, find a way to remove this section??
   adt:
-    variable: obs_absolute_dynamic_topography
+    variable: absoluteDynamicTopography
   sst:
-    variable: sea_surface_temperature
+    variable: seaSurfaceTemperature
   salt:
+    skip: true
     variable: sea_water_salinity
   temp:
+    skip: true
     variable: sea_water_temperature
   sss:
+    skip: true
     variable: sea_surface_salinity
 
 diagnostics:

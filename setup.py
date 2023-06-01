@@ -19,8 +19,8 @@ setuptools.setup(
         "enabled": True,
     },
     install_requires=[
-        'bespin @ git+ssh://git@github.com/jcsda-internal/bespin@feature/soca',
-        'padme @ git+ssh://git@github.com/jcsda-internal/padme@feature/soca',
+#        'bespin @ git+ssh://git@github.com/travissluka/bespin@feature/soca',
+#        'padme @ git+ssh://git@github.com/travissluka/padme@feature/soca',
         'click',
         'pyyaml',
     ],
