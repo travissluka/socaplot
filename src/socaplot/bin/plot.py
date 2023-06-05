@@ -23,7 +23,11 @@ import pytz
 @click.option('-e', '--enddate', help=(
     "end date to use for the plots. Default is to use the earliest date"
     " amon all the experiments."))
-def plot(exp_dir, startdate, enddate):
+@click.option('-o', '--outdir', help=(
+    "output path in which to store the plots."),
+    type=click.Path(dir_okay=True),
+    default='./plots', show_default=True)
+def plot(exp_dir, startdate, enddate, outdir):
     """ Plot one or more experiments.
 
     EXP_DIR should be the top level directory of an experiment, more than
@@ -35,6 +39,7 @@ def plot(exp_dir, startdate, enddate):
 
     #parse input args
     exp_dir = [pathlib.Path(d).resolve() for d in exp_dir]
+    outdir = pathlib.Path(outdir).resolve()
     if startdate is not None:
         startdate = pytz.utc.localize(dtp.parse(startdate))
     if enddate is not None:
@@ -122,12 +127,14 @@ def plot(exp_dir, startdate, enddate):
         f'  startdate: {startdate} \n'
         f'  enddate: {enddate}')
 
+    # ---------------------------------------------------------------------------------------------
     # generate / find the merged files
+    # ---------------------------------------------------------------------------------------------
     # TODO remove these hardcoded values
     binning = 'hires_all'
-    for exp, plat in product(exp_param.keys(), ('adt', 'sst', 'sss' )):
-        pfx='_'.join([d.strftime("%Y%m%d%H") for d in (startdate, enddate)])
-        exp_file = exp_param[exp]['path'] / f'obs_bin/l1c/{binning}.{plat}.{pfx}.nc'
+    date_pfx='_'.join([d.strftime("%Y%m%d%H") for d in (startdate, enddate)])
+    for exp, plat in product(exp_param.keys(), ('adt', 'sst', 'sss' )):        
+        exp_file = exp_param[exp]['path'] / f'obs_bin/l1c/{binning}.{plat}.{date_pfx}.nc'
 
         # use bespin to merge the files
         if not exp_file.exists():
@@ -147,6 +154,62 @@ def plot(exp_dir, startdate, enddate):
             cmd = f'bespin merge {" ".join(input_files)} -o  {exp_file}'
             sp.check_call(cmd, shell=True)
 
+
+    # ---------------------------------------------------------------------------------------------
     # generate plots!
+    # ---------------------------------------------------------------------------------------------
     print("Generating plots...")
-    print("NOT YET IMPLEMENTED!")
+    print(f" saving to {outdir}")
+
+    # plot name
+    if len(exp_param.keys()) == 1:
+        # "exp"
+        exp = list(exp_param.keys())[0]
+        exp_name = f'{exp}'
+        outdir = outdir / exp_name
+    elif len(exp_param.keys()) == 2:
+        # "exp2 - exp1"        
+        exp1, exp2 = list(exp_param.keys())
+        exp_name = f'{exp2}-{exp1}'
+        outdir = outdir / exp_name
+    else:
+        raise NotImplementedError("Have not implemented plotting for >2 experiments")
+        
+    # for each obs platform type:
+    # TODO remove hardcoded values here
+    binning = 'hires_all'    
+    for plat in ('adt', 'sst', 'sss'):
+        print(f'Platform: {plat}')
+        infiles = []
+        for exp in exp_param.keys():
+            infile = exp_param[exp]['path'] / 'obs_bin' / 'l1c' 
+            infile = infile / f'{binning}.{plat}.{date_pfx}.nc'
+            if infile.exists():
+                infiles.append(infile)
+        
+        # skip if there are no valid files
+        if len(infiles) != len(exp_param):
+            continue
+
+        # plot everything twice. Once with all obs, once with only obs that pass qc
+        # TODO remove hardcoded use of hat10        
+        for qc in ('', '_qc'):
+            # create output directory
+            plat_outdir = outdir / (plat + qc)
+            if not plat_outdir.exists():
+                os.makedirs(plat_outdir)
+
+            # select which qc to apply
+            if qc == '':
+                args = '-c qc'
+            else:
+                args = '-s qc:0'
+            
+            if len(infiles) > 1:
+                args = f'{args} --diff'
+
+            infiles_str = ' '.join([str(s) for s in infiles])
+            cmd = f'padme autoplot --domain hat10 -o {plat_outdir}/{exp_name} {infiles_str} {args}'
+            sp.check_call(cmd, shell=True)
+
+    

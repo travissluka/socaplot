@@ -74,4 +74,25 @@ For detailed usage of the `bin` tool, run:
 
 ### 2. Plotting
 
-(TODO)
+> NOTE: The plotting is currently hardcoded for the HAT10 regional domain!
+ 
+> NOTE: Only 2D spatial plots are currently working, timeseries will be added soon(ish)
+
+The plotting tool will automatically plot all available plots for the time period available for either 1) a single experiment, or 2) a comparison of 2 or more different experiments. The types of plots generated will depend on the number of experiments given.
+
+For example, to generate comparison plots of `exp2 - exp1` (note that the first experiment listed on the command line should be considered the "reference" experiment that is subtracted from the other(s) ), run:
+
+```console
+> socaplot plot <exp1> <exp2>
+```
+
+The script will first merge the input binned files for the given timeperiod, if not already done so, then generate a whole bunch of plots.
+
+
+If you have multiple experiments that you plan on separately comparing, and there is a chance that they have different end dates that they have run to, it is recommended that you used the `-e <enddate>` option when plotting so that all 2D spatial plots use the same date.
+
+For detailed usage of the `plot` tool, run:
+
+```console
+> socaplot plot --help
+```
